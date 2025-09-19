@@ -1,0 +1,1269 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Panel Calidad</title>
+<meta name="theme-color" content="#111827">
+<link rel="manifest" href="manifest.json">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
+
+<style>
+:root {
+  /* Paleta de Colores Profesional */
+  --bg-dark: #111827;      /* Azul Marino Oscuro (Fondo Principal) */
+  --bg-medium: #1F2937;    /* Gris Azulado Oscuro (Tarjetas y Paneles) */
+  --bg-light: #374151;     /* Gris Azulado Claro (Bordes, Hover) */
+  --text-light: #F9FAFB;   /* Blanco Hueso (Texto Principal) */
+  --text-medium: #9CA3AF; /* Gris Claro (Texto Secundario, Etiquetas) */
+  --text-dark: #1F2937;    /* Texto para fondos claros */
+  --accent-blue: #3B82F6;   /* Azul Principal (Botones, Énfasis) */
+  --accent-blue-hover: #2563EB;
+  --accent-green: #10B981;  /* Verde Esmeralda (Éxito, Liberado) */
+  --accent-red: #EF4444;    /* Rojo (Peligro, Rechazado) */
+  --accent-orange: #F59E0B; /* Ámbar (Advertencia, En Proceso) */
+  
+  /* Estilos de LED */
+  --led-size: 50px;
+  --led-gap: 16px;
+  --led-off-core: #2d3748;
+  --led-off-edge: #1a202c;
+  --glow-green: rgba(16, 185, 129, 0.7);
+  --glow-red: rgba(239, 68, 68, 0.7);
+  --glow-orange: rgba(245, 158, 11, 0.7);
+  --blink-duration: 1.2s;
+
+  /* Tipografía */
+  --font-family: 'Poppins', Arial, Helvetica, sans-serif;
+  --titulo-size: clamp(36px, 6vw, 72px);
+
+  /* Otros */
+  --border-radius-md: 16px; /* Aumentamos el radio para un look más moderno */
+  --border-radius-sm: 10px;
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  height: 100%;
+  margin: 0;
+  font-family: var(--font-family);
+  color: var(--text-light);
+  background-color: var(--bg-dark);
+  /* Fondo degradado para que el efecto glass se aprecie mejor */
+  background-image: 
+    radial-gradient(at 47% 33%, hsl(225, 39%, 30%) 0, transparent 59%), 
+    radial-gradient(at 82% 65%, hsl(253, 16%, 7%) 0, transparent 55%);
+}
+
+.pantalla {
+  display: none;
+  width: 100%;
+  min-height: 100vh;
+  padding: 20px;
+  transition: opacity 0.5s ease-out;
+}
+.pantalla.activa { display: flex; flex-direction: column; }
+
+/* ================= BRANDING HEADER ================= */
+.brand-title {
+  font-family: 'Times New Roman', Times, serif;
+  color: white;
+  font-size: clamp(60px, 3vw, 28px);
+  font-weight: normal;
+  text-align: center;
+  width: 100%;
+  letter-spacing: 2px;
+  margin-top: 10px;
+  margin-bottom: 5px;
+  padding: 0;
+}
+
+/* ================= SPLASH SCREEN ================= */
+#splashScreen {
+  align-items: center;
+  justify-content: center;
+  background-color: var(--bg-dark);
+}
+.splash-content {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 15px;
+}
+.splash-logo-container {
+  border-radius: 25px;
+  margin: 20px 0;
+  padding: 15px;
+  /* Efecto Glassmorphism */
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px); /* Para Safari */
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+}
+.splash-logo {
+  width: 150px;
+  height: auto;
+  display: block;
+  border-radius: 15px;
+}
+.splash-loading {
+  font-size: 1.2rem;
+  color: var(--text-medium);
+  letter-spacing: 2px;
+}
+.splash-loading .dot {
+  animation: blink-dot 1.4s infinite;
+  opacity: 0;
+}
+.splash-loading .dot:nth-child(2) { animation-delay: 0.2s; }
+.splash-loading .dot:nth-child(3) { animation-delay: 0.4s; }
+@keyframes blink-dot { 0%, 100% { opacity: 0; } 50% { opacity: 1; } }
+
+/* ================= PANTALLA 1: SELECCIÓN DE USUARIO ================= */
+#pantalla1 {
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+}
+#pantalla1 .brand-header { text-align: center; }
+#pantalla1 h1 {
+  margin: 0;
+  font-size: clamp(32px, 5vw, 48px);
+  font-weight: 700;
+  color: var(--text-light);
+}
+
+.btn-contenedor {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 16px;
+  max-width: 300px;
+}
+
+/* === BOTÓN ESTILO GLASS === */
+.usuario-btn {
+  background: rgba(59, 130, 246, 0.25); /* Color base con transparencia */
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  color: var(--text-light);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  padding: 14px 28px;
+  border-radius: var(--border-radius-sm);
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background .2s ease, transform .2s ease, box-shadow .2s ease;
+  box-shadow: var(--shadow-md);
+}
+.usuario-btn:hover {
+  background: rgba(59, 130, 246, 0.4); /* Aumentar opacidad en hover */
+  transform: translateY(-2px);
+  box-shadow: 0 0 15px rgba(59, 130, 246, 0.3);
+}
+.btn-rojo { background: rgba(239, 68, 68, 0.25); }
+.btn-rojo:hover { background: rgba(239, 68, 68, 0.4); }
+
+
+/* ================= PANTALLA 2: PANEL PRINCIPAL ================= */
+#pantalla2 { gap: 10px; }
+.header {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 10px;
+  width: 100%;
+  flex-wrap: wrap;
+}
+#tituloFijo {
+  font-weight: 700;
+  text-align: center;
+  font-size: var(--titulo-size);
+  color: var(--text-light);
+}
+#turnoActual {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 1rem;
+  font-weight: 600;
+  padding: 8px 16px;
+  border-radius: var(--border-radius-sm);
+  /* Efecto Glass */
+  background: rgba(31, 41, 55, 0.5);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+.zona-centro {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  gap: 24px;
+  margin-top: 20px;
+}
+
+.grupo-contenedor {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+  width: 100%;
+  max-width: 1400px;
+  justify-content: center;
+}
+/* === MEJORA: CARD CON FONDO DE PANEL LED === */
+.grupo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 24px;
+  flex-grow: 1;
+  min-width: 300px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  border-radius: var(--border-radius-md);
+  
+  /* Nuevo fondo de panel de LEDs apagados */
+  background-color: #18181a; /* Color base oscuro del panel */
+  background-image: radial-gradient(circle at center, rgba(0,0,0,0.4) 2px, transparent 3px);
+  background-size: 12px 12px; /* Controla el tamaño y espaciado de los "puntos" */
+  
+  border: 1px solid rgba(255, 255, 255, 0.1); /* Mantenemos el borde glass */
+  box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.6); /* Sombra interior para dar relieve */
+}
+.grupo:hover {
+  transform: translateY(-5px);
+  box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.6), 0 0 20px rgba(59, 130, 246, 0.1);
+}
+.grupo.oculto { display: none; }
+.grupo .nombre {
+  font-size: clamp(20px, 2.2vw, 26px);
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+.grupo .tarimas {
+  font-size: clamp(16px, 1.7vw, 18px);
+  color: var(--text-medium);
+  margin-bottom: 20px;
+}
+.leds {
+  display: flex;
+  gap: var(--led-gap);
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 10px;
+}
+/* === MEJORA LED === */
+.led {
+  width: var(--led-size);
+  height: var(--led-size);
+  border-radius: 50%;
+  cursor: pointer;
+  background: radial-gradient(circle at 45% 40%, var(--led-off-core) 40%, var(--led-off-edge) 100%);
+  border: 2px solid var(--led-off-edge);
+  transition: all .2s ease;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  color: var(--text-light);
+  line-height: 1;
+  font-size: 11px;
+  font-weight: bold;
+  text-shadow: 0 0 3px #000;
+}
+.led:active { transform: scale(.96); }
+.led.on {
+  background: radial-gradient(circle at 48% 45%, #6EE7B7 40%, var(--accent-green) 100%);
+  box-shadow: 0 0 22px var(--glow-green);
+  border-color: var(--accent-green);
+  animation: blink var(--blink-duration) ease-in-out infinite;
+}
+/* === ESTILOS PARA TEXTO/CONTADOR DENTRO DEL LED === */
+.led span {
+    line-height: 1;
+    text-align: center;
+}
+.led .tiempo-transcurrido {
+    line-height: 1;
+    color: var(--text-dark); /* Texto oscuro para mejor contraste en LED encendido */
+    text-shadow: none;
+}
+.led.on .tarima-id {
+    color: var(--text-dark);
+    text-shadow: none;
+    font-size: 18px;
+    font-weight: 700;
+}
+.led .tiempo-transcurrido b {
+    font-size: 18px;
+    font-weight: 700;
+}
+.led .tiempo-transcurrido small {
+    display: block;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+.led.naranja {
+  background: radial-gradient(circle at 48% 45%, #FBBF24 40%, var(--accent-orange) 100%);
+  box-shadow: 0 0 22px var(--glow-orange);
+  border-color: var(--accent-orange);
+}
+.led.rojo {
+  background: radial-gradient(circle at 48% 45%, #F87171 40%, var(--accent-red) 100%);
+  box-shadow: 0 0 22px var(--glow-red);
+  border-color: var(--accent-red);
+}
+.led.verde {
+  background: radial-gradient(circle at 48% 45%, #6EE7B7 40%, var(--accent-green) 100%);
+  box-shadow: 0 0 22px var(--glow-green);
+  border-color: var(--accent-green);
+}
+.led.disabled { cursor: not-allowed; opacity: 0.6; }
+
+.tiempos {
+  margin-top: 10px;
+  font-size: 14px;
+  color: var(--text-medium);
+  text-align: left;
+  width: 100%;
+  max-height: 150px;
+  overflow-y: auto;
+  background-color: rgba(0, 0, 0, 0.2); /* Fondo sutilmente transparente */
+  padding: 10px;
+  border-radius: var(--border-radius-sm);
+  border-top: 1px solid rgba(255,255,255,0.1);
+}
+.tiempos p { margin: 0 0 5px; }
+
+.footer { width: 100%; display: flex; justify-content: center; padding: 20px 0 0; }
+.footer .usuario-btn { padding: 10px 20px; font-size: 16px; }
+
+@keyframes blink { 50% { box-shadow: 0 0 35px var(--glow-green); } }
+
+/* ================= MODALES ESTILO GLASS ================= */
+.modal, .modal-calidad, .modal-produccion, .custom-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5); /* Fondo del overlay */
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  visibility: hidden;
+  opacity: 0;
+  transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+.modal.visible, .modal-calidad.visible, .modal-produccion.visible, .custom-modal-overlay.visible { 
+    visibility: visible; 
+    opacity: 1; 
+}
+/* === MODAL ESTILO GLASS === */
+.modal-content, .custom-modal {
+  padding: 30px;
+  text-align: center;
+  width: 90%;
+  max-width: 500px;
+  box-shadow: var(--shadow-lg);
+  border-radius: var(--border-radius-md);
+  /* Efecto Glass */
+  background: rgba(31, 41, 55, 0.7); /* Mayor opacidad para legibilidad */
+  backdrop-filter: blur(15px);
+  -webkit-backdrop-filter: blur(15px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  transform: scale(0.9);
+  transition: transform 0.3s ease;
+}
+
+.visible .modal-content, .visible .custom-modal {
+    transform: scale(1);
+}
+
+.modal-content h3, .custom-modal h3 {
+  margin-top: 0;
+  font-size: 22px;
+  margin-bottom: 25px;
+}
+
+/* Modal Calidad */
+#modalCalidad .opciones {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  margin-bottom: 25px;
+}
+#modalCalidad .opcion-btn {
+  padding: 15px 25px;
+  font-size: 18px;
+  font-weight: 600;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: var(--border-radius-sm);
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.2s ease;
+  color: #fff;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+#modalCalidad .opcion-btn:hover { transform: scale(1.02); }
+#modalCalidad .opcion-btn[data-color="rojo"] { background: rgba(239, 68, 68, 0.3); }
+#modalCalidad .opcion-btn[data-color="rojo"]:hover { background: rgba(239, 68, 68, 0.5); }
+#modalCalidad .opcion-btn[data-color="verde"] { background: rgba(16, 185, 129, 0.3); }
+#modalCalidad .opcion-btn[data-color="verde"]:hover { background: rgba(16, 185, 129, 0.5); }
+
+#modalCalidad .cerrar-btn {
+  background: rgba(55, 65, 81, 0.4); /* --bg-light con transparencia */
+  color: var(--text-light);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 10px 20px;
+  border-radius: var(--border-radius-sm);
+  cursor: pointer;
+  font-weight: 600;
+  backdrop-filter: blur(5px);
+}
+#modalCalidad .cerrar-btn:hover { background: rgba(75, 85, 99, 0.6); }
+
+/* Modal de Rechazo y otros con inputs */
+#modalRechazo .modal-content {
+  text-align: left;
+  max-height: 85vh;  
+  overflow-y: auto;
+}
+#modalRechazo form { display: flex; flex-direction: column; gap: 15px; }
+#modalRechazo label { font-size: 14px; margin-bottom: 5px; display: block; color: var(--text-medium); }
+/* === INPUTS ESTILO GLASS === */
+#modalRechazo input, #modalRechazo textarea, #contraseñaInput {
+  width: 100%;
+  padding: 12px;
+  border-radius: var(--border-radius-sm);
+  color: var(--text-light);
+  font-size: 16px;
+  font-family: var(--font-family);
+  /* Efecto Glass */
+  background: rgba(17, 24, 39, 0.5); /* --bg-dark con transparencia */
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+#modalRechazo input:focus, #modalRechazo textarea:focus, #contraseñaInput:focus {
+    outline: none;
+    border-color: var(--accent-blue);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.5);
+}
+#modalRechazo textarea { resize: vertical; min-height: 80px; }
+
+/* ---- MODALES GENÉRICOS ---- */
+.custom-modal p {
+  font-size: 16px;
+  color: var(--text-medium);
+  margin-bottom: 25px;
+  line-height: 1.6;
+}
+.custom-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 15px;
+  margin-top: 20px;
+}
+.custom-modal-actions button {
+    padding: 10px 20px;
+    font-size: 16px;
+}
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 15px;
+  margin-top: 20px;
+}
+.modal-actions button {
+    padding: 12px 24px;
+}
+
+/* ======== ESTILOS PANEL LATERAL (mt-panel) ======== */
+.mt-fab { position: fixed; bottom: 20px; right: 20px; background: var(--accent-blue); color: #fff; border: none; border-radius: 50%; width: 78px; height: 78px; font-size: 12px; font-weight: 700; cursor: pointer; z-index: 1000; box-shadow: 0 10px 25px rgba(59, 130, 246, 0.35); }
+.mt-fab:active { transform: translateY(1px); }
+.mt-panel { position: fixed; top: 0; right: -420px; width: 420px; max-width: 95vw; height: 100%; background: rgba(17, 24, 39, 0.7); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px); color: var(--text-light); box-shadow: -4px 0 20px rgba(0,0,0,.45); transition: right .28s ease; z-index: 999; border-left: 1px solid rgba(255,255,255,0.1); }
+.mt-panel.open { right: 0; }
+.mt-panel-content { padding: 20px; }
+.mt-close { background: transparent; border: none; color: var(--text-medium); font-size: 28px; cursor: pointer; float: right; }
+.mt-close:hover { color: #fff; }
+.mt-row { display: flex; gap: 10px; align-items: stretch; }
+.mt-btn { padding: 10px 14px; border: none; border-radius: var(--border-radius-sm); font-weight: 700; cursor: pointer; }
+.mt-primary { background:var(--accent-blue); color:#fff; }
+.mt-success { background:var(--accent-green); color:#fff; }
+.mt-select, #bxInput { flex: 1; padding: 10px 12px; border-radius: var(--border-radius-sm); border: 1px solid var(--bg-light); background: rgba(17, 24, 39, 0.5); color:var(--text-light); }
+.mt-select:focus, #bxInput:focus { outline: 2px solid var(--accent-blue); }
+.mt-card { margin-top: 16px; padding: 16px; border-radius: var(--border-radius-md); background: rgba(31, 41, 55, 0.5); border: 1px solid var(--bg-light); }
+.mt-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 8px 14px; margin-bottom: 10px; }
+.mt-list { list-style: none; padding-left: 0; margin: 8px 0 0; max-height: 200px; overflow: auto; }
+.mt-list li { padding: 10px 12px; margin-bottom: 8px; border-radius: var(--border-radius-sm); background:rgba(17, 24, 39, 0.5); border: 1px solid var(--bg-light); font-size: 14px; word-break: break-word; }
+.mt-assign { margin-top: 14px; border-top: 1px dashed var(--bg-light); padding-top: 12px; }
+
+/* ================= MEDIA QUERIES RESPONSIVE ================= */
+@media (max-width: 768px) {
+  .header { justify-content: center; text-align: center; }
+  #turnoActual { position: static; transform: none; margin-top: 10px; }
+}
+
+/* === AJUSTES PARA VISTA HORIZONTAL EN MÓVILES === */
+@media (max-height: 500px) and (orientation: landscape) {
+    #pantalla2 .zona-centro {
+        margin-top: 5px;
+        gap: 15px;
+        padding-bottom: 15px;
+    }
+    #pantalla2 .header {
+        padding: 0 10px;
+    }
+    #pantalla2 #tituloFijo {
+        font-size: clamp(28px, 5vw, 40px);
+    }
+    #pantalla2 .grupo-contenedor {
+        flex-direction: row;
+        align-items: flex-start;
+        flex-wrap: nowrap;
+        gap: 15px;
+    }
+    #pantalla2 .grupo {
+        padding: 15px;
+        min-width: 0; /* Permitir que flexbox controle el tamaño */
+        flex: 1;
+    }
+    #pantalla2 .leds {
+        gap: 10px;
+    }
+    #pantalla2 .led {
+        --led-size: 40px;
+    }
+    .brand-title {
+        display: none; /* Ocultar el título de la marca para ahorrar espacio */
+    }
+    .footer {
+        padding: 10px 0 0;
+    }
+}
+</style>
+</head>
+<body>
+
+<section id="splashScreen" class="pantalla activa">
+    <div class="splash-content">
+        <p class="brand-title">CORNING</p>
+        <div class="splash-logo-container">
+              <img src="https://i.imgur.com/JzWf27s.png" alt="Logo de Logística" class="splash-logo">
+        </div>
+        <p class="splash-loading">Cargando<span class="dot">.</span><span class="dot">.</span><span class="dot">.</span></p>
+    </div>
+</section>
+
+<section id="pantalla1" class="pantalla">
+    <div class="brand-header">
+        <p class="brand-title">CORNING</p>
+        <h1 id="mainTitle">Panel de Calidad</h1>
+    </div>
+    <div class="btn-contenedor">
+        <button class="usuario-btn" onclick="seleccionarUsuario('CALIDAD')">INGRESAR A CALIDAD</button>
+    </div>
+</section>
+
+<section id="pantalla2" class="pantalla">
+<p class="brand-title">CORNING</p>
+<header class="header">
+    <div id="tituloFijo">CALIDAD</div>
+    <div id="turnoActual"></div>
+</header>
+<div class="zona-centro">
+    <div class="grupo-contenedor">
+        <div class="grupo" data-grupo="CALIDAD_MULTIPORT">
+            <div class="nombre">CALIDAD MULTIPORT</div>
+            <div class="leds" data-grupo="CALIDAD_MULTIPORT" data-linea="linea1"></div>
+            <div class="tarimas">Tarimas: 0</div>
+            <div class="tiempos" data-grupo="CALIDAD_MULTIPORT"></div>
+        </div>
+      
+        <div class="grupo" data-grupo="CALIDAD_DROPS">
+            <div class="nombre">CALIDAD DROPS</div>
+            <div class="leds" data-grupo="CALIDAD_DROPS" data-linea="linea1"></div>
+            <div class="tarimas">Tarimas: 0</div>
+            <div class="tiempos" data-grupo="CALIDAD_DROPS"></div>
+        </div>
+    
+        <div class="grupo" data-grupo="CALIDAD_BEDROCK">
+            <div class="nombre">CALIDAD BEDROCK</div>
+            <div class="leds" data-grupo="CALIDAD_BEDROCK" data-linea="linea1"></div>
+            <div class="tarimas">Tarimas: 0</div>
+            <div class="tiempos" data-grupo="CALIDAD_BEDROCK"></div>
+        </div>
+    </div>
+</div>
+<div class="footer">
+    <button class="usuario-btn btn-rojo" onclick="volverAPantalla1()">Cerrar sesión</button>
+</div>
+</section>
+
+<div id="modalCalidad" class="modal-calidad">
+  <div class="modal-content">
+    <h3 id="modalCalidadTitulo">Selecciona el estado:</h3>
+    <div class="opciones">
+      <button class="opcion-btn" data-color="rojo">Rechazada 🔴</button>
+      <button class="opcion-btn" data-color="verde">Liberada 🟢</button>
+    </div>
+    <button class="cerrar-btn">Cerrar</button>
+  </div>
+</div>
+  
+<div id="modalRechazo" class="modal-calidad">
+  <div class="modal-content">
+    <h3>Detalles del Rechazo</h3>
+    <form id="formularioRechazo">
+        <label for="empleado">Empleado Originador:</label>
+        <input type="text" id="empleado" name="empleado" required>
+        <label for="linea">Línea afectada:</label>
+        <input type="text" id="linea" name="linea" required>
+        <label for="parte">No. de parte:</label>
+        <input type="text" id="parte" name="parte" required>
+        <label for="descripcionParte">Descripción del No. de parte:</label>
+        <input type="text" id="descripcionParte" name="descripcionParte" required>
+        <label for="problema">Descripción del problema:</label>
+        <textarea id="problema" name="problema" required></textarea>
+        <label for="causa">Causa raíz del problema:</label>
+        <textarea id="causa" name="causa" required></textarea>
+        <label for="accion">Acción correctiva:</label>
+        <textarea id="accion" name="accion" required></textarea>
+        <div class="modal-actions">
+            <button type="submit" class="usuario-btn">Guardar Rechazo</button>
+            <button type="button" onclick="cerrarModalRechazo()" class="usuario-btn btn-rojo">Cancelar</button>
+        </div>
+    </form>
+  </div>
+</div>
+  
+<button class="mt-fab" id="mtOpenBtn" style="display:none;" title="Identificación de Tarima">TARIMAS</button>
+
+<div id="mtPanel" class="mt-panel" aria-hidden="true">
+  <div class="mt-panel-content">
+    <button id="mtCloseBtn" class="mt-close" aria-label="Cerrar panel">&times;</button>
+    <h2>Identificación de Tarima</h2>
+    
+    <div id="tarimasPendientesPanel" style="display:none;">
+      <h3>Tarimas pendientes por inspección</h3>
+      <ul id="listaTarimasPendientes" class="mt-list"></ul>
+    </div>
+
+    <p>Escanea o ingresa un código <b>BX</b> para ver detalles:</p>
+    <div class="mt-row">
+      <input type="text" id="bxInput" placeholder="Escanear/pegar código BX..." autocomplete="off" />
+      <button id="buscarTarimaBtn" class="mt-btn mt-primary">Buscar</button>
+    </div>
+
+    <div id="tarimaInfo" class="mt-card" style="display:none;">
+      <h3>Tarima encontrada</h3>
+      <div class="mt-grid">
+        <div><b>ID:</b> <span id="tarimaId">—</span></div>
+        <div><b>Empleado:</b> <span id="empleado">—</span></div>
+        <div><b>Turno:</b> <span id="turno">—</span></div>
+        <div><b>Total cajas:</b> <span id="totalCajas">0</span></div>
+        <div><b>Total piezas:</b> <span id="totalPiezas">0</span></div>
+      </div>
+      <h4>Detalle de cajas (BX | piezas)</h4>
+      <ul id="listaCajas" class="mt-list"></ul>
+      <div id="ledAssignment" class="mt-assign" style="display:none;">
+        <label for="ledSelect">Asignar LED a esta tarima:</label>
+        <div class="mt-row">
+          <select id="ledSelect" class="mt-select"></select>
+          <button id="asignarLedBtn" class="mt-btn mt-success">Asignar LED</button>
+        </div>
+        <small>Nota: los LEDs solo podrán encenderse/apagarse si tienen tarima asignada.</small>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="modalAlerta" class="custom-modal-overlay">
+    <div class="custom-modal">
+        <h3 id="alertaTitulo">Notificación</h3>
+        <p id="alertaMensaje" class="modal-generic-message"></p>
+        <div class="modal-actions" style="justify-content: center;">
+            <button id="alertaBotonCerrar" class="usuario-btn">Aceptar</button>
+        </div>
+    </div>
+</div>
+
+<div id="modalConfirmacion" class="custom-modal-overlay">
+    <div class="custom-modal">
+        <h3 id="confirmacionTitulo">Confirmación</h3>
+        <p id="confirmacionMensaje" class="modal-generic-message"></p>
+        <div class="modal-actions">
+            <button id="confirmacionBotonCancelar" class="usuario-btn btn-rojo">Cancelar</button>
+            <button id="confirmacionBotonOk" class="usuario-btn">Confirmar</button>
+        </div>
+    </div>
+</div>
+
+<div id="modalContraseña" class="custom-modal-overlay">
+    <div class="custom-modal">
+        <h3 id="contraseñaTitulo">Acceso Requerido</h3>
+        <p id="contraseñaMensaje" class="modal-generic-message"></p>
+        <input type="password" id="contraseñaInput" placeholder="Introduce la contraseña...">
+        <div class="modal-actions">
+            <button id="contraseñaBotonCancelar" class="usuario-btn btn-rojo">Cancelar</button>
+            <button id="contraseñaBotonOk" class="usuario-btn">Aceptar</button>
+        </div>
+    </div>
+</div>
+
+<script>
+// ================= CONFIG Y ESTADO =================
+const CONFIG = {
+    USUARIOS: ['MULTIPORT', 'BEDROCK', 'DROPS', 'LOGÍSTICA', 'SUPERVISOR', 'CALIDAD'],
+    PRODUCCION_GRUPOS: ['MULTIPORT', 'BEDROCK', 'DROPS'],
+    PASSWORDS: {
+        'LOGÍSTICA': 'LOGRAM', 'MULTIPORT': 'MP25', 'BEDROCK': 'BR25', 'DROPS': 'DROP25', 'SUPERVISOR': 'SUP25',
+        'CALIDAD_MULTIPORT': 'AQLMP', 'CALIDAD_DROPS': 'AQLDP', 'CALIDAD_BEDROCK': 'AQLBR', 'REPORTES': 'REPO25', 'DASHBOARD': 'DASH25'
+    },
+    LEDS_POR_GRUPO: {
+        'MULTIPORT': 5, 'BEDROCK': 5, 'DROPS': 5, 'CALIDAD_MULTIPORT': 5, 'CALIDAD_BEDROCK': 5, 'CALIDAD_DROPS': 5
+    }
+};
+
+let usuarioSeleccionado = null;
+let ledActivoParaFormulario = { grupo: null, idx: null, linea: null };
+let historialRef;
+
+
+// ================= FIREBASE =================
+const firebaseConfig = {
+    apiKey: "AIzaSyCPTEu73s2rVIm2VsdTk59kVIOyi1jeyu8",
+    authDomain: "panel-logistica.firebaseapp.com",
+    databaseURL: "https://panel-logistica-default-rtdb.firebaseio.com",
+    projectId: "panel-logistica",
+    storageBucket: "panel-logistica.appspot.com",
+    messagingSenderId: "38365879945",
+    appId: "1:38365879945:web:e2f3590fe77f013dba3058"
+};
+firebase.initializeApp(firebaseConfig);
+const database = firebase.database();
+const db = database; 
+
+// A partir de aquí se incluyen solo las funciones JS necesarias para CALIDAD
+
+(function compatSeleccionarUsuario(){
+  window.seleccionarUsuario = function(usuarioClave) {
+    _seleccionarUsuario(usuarioClave);
+  };
+})();
+
+// ================= MODALES PERSONALIZADOS =================
+const modalAlerta = document.getElementById('modalAlerta');
+const modalConfirmacion = document.getElementById('modalConfirmacion');
+const modalContraseña = document.getElementById('modalContraseña');
+
+function mostrarAlerta(mensaje, titulo = "Notificación") {
+    document.getElementById('alertaTitulo').textContent = titulo;
+    document.getElementById('alertaMensaje').textContent = mensaje;
+    modalAlerta.classList.add('visible');
+    return new Promise(resolve => {
+        document.getElementById('alertaBotonCerrar').onclick = () => {
+            modalAlerta.classList.remove('visible');
+            resolve();
+        };
+    });
+}
+
+function mostrarConfirmacion(mensaje, titulo = "Confirmación") {
+    document.getElementById('confirmacionTitulo').textContent = titulo;
+    document.getElementById('confirmacionMensaje').textContent = mensaje;
+    modalConfirmacion.classList.add('visible');
+    return new Promise(resolve => {
+        document.getElementById('confirmacionBotonOk').onclick = () => {
+            modalConfirmacion.classList.remove('visible');
+            resolve(true);
+        };
+        document.getElementById('confirmacionBotonCancelar').onclick = () => {
+            modalConfirmacion.classList.remove('visible');
+            resolve(false);
+        };
+    });
+}
+
+function mostrarPromptContraseña(mensaje, titulo = "Acceso Requerido") {
+    document.getElementById('contraseñaTitulo').textContent = titulo;
+    document.getElementById('contraseñaMensaje').textContent = mensaje;
+    const input = document.getElementById('contraseñaInput');
+    input.value = '';
+    modalContraseña.classList.add('visible');
+    input.focus();
+
+    return new Promise(resolve => {
+        const resolver = (value) => {
+            modalContraseña.classList.remove('visible');
+            document.getElementById('contraseñaBotonOk').onclick = null;
+            document.getElementById('contraseñaBotonCancelar').onclick = null;
+            input.onkeypress = null;
+            resolve(value);
+        };
+        
+        document.getElementById('contraseñaBotonOk').onclick = () => resolver(input.value);
+        document.getElementById('contraseñaBotonCancelar').onclick = () => resolver(null);
+        input.onkeypress = (e) => {
+            if (e.key === 'Enter') resolver(input.value);
+        };
+    });
+}
+
+// ================= Panel de Identificación de Tarimas (para Calidad Multiport) =================
+const MT = {
+  ui: {
+    panel:    document.getElementById('mtPanel'),
+    openBtn: document.getElementById('mtOpenBtn'),
+    closeBtn:document.getElementById('mtCloseBtn'),
+    bxInput: document.getElementById('bxInput'),
+    buscarBtn: document.getElementById('buscarTarimaBtn'),
+    infoBox: document.getElementById('tarimaInfo'),
+    pendientesPanel: document.getElementById('tarimasPendientesPanel'),
+    fields: { id: document.getElementById('tarimaId'), empleado: document.getElementById('empleado'), turno: document.getElementById('turno'), totalCajas: document.getElementById('totalCajas'), totalPiezas: document.getElementById('totalPiezas'), listaCajas: document.getElementById('listaCajas') },
+    asignacion: { wrap: document.getElementById('ledAssignment'), select: document.getElementById('ledSelect'), btn: document.getElementById('asignarLedBtn') }
+  },
+  state: { tarimaActual: null }
+};
+
+if (MT.ui.openBtn) MT.ui.openBtn.addEventListener('click', () => {
+    MT.ui.panel.classList.add('open');
+    if(usuarioSeleccionado && usuarioSeleccionado.startsWith('CALIDAD_')) {
+        MT.ui.pendientesPanel.style.display = 'block';
+        MT.ui.infoBox.style.display = 'none';
+        MT.ui.bxInput.value = '';
+        renderTarimasPendientes();
+    }
+});
+if (MT.ui.closeBtn) MT.ui.closeBtn.addEventListener('click', () => MT.ui.panel.classList.remove('open'));
+if (MT.ui.buscarBtn) MT.ui.buscarBtn.addEventListener('click', () => { const bx = (MT.ui.bxInput.value || '').trim(); if (bx) buscarTarimaPorBX(bx); });
+if (MT.ui.bxInput) MT.ui.bxInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') MT.ui.buscarBtn.click(); });
+
+function buscarTarimaPorBX(bxCode) {
+  db.ref('tarimas').once('value').then(snapshot => {
+    let encontrada = null;
+    snapshot.forEach(tSnap => {
+      const t = tSnap.val() || {};
+      const cajas = t.cajas || {};
+      for (const k in cajas) {
+        if (cajas[k] && cajas[k].codigoCaja === bxCode) {
+          encontrada = { id: t.id || tSnap.key, ...t };
+          break;
+        }
+      }
+      if (encontrada) return true;
+    });
+
+    if (!encontrada) {
+      MT.ui.infoBox.style.display = 'none';
+      mostrarAlerta('No se encontró tarima con ese BX.');
+      return;
+    }
+    MT.state.tarimaActual = normalizarTarima(encontrada);
+    renderTarimaEncontrada(MT.state.tarimaActual);
+    MT.ui.pendientesPanel.style.display = 'none';
+  }).catch(err => {
+    console.error('Error buscando tarima:', err);
+    mostrarAlerta('Error al buscar la tarima. Reintenta.');
+  });
+}
+
+function normalizarTarima(t) {
+  const out = {
+    id: t.id,
+    empleadoId: t.empleadoId || t.empleado || t.id_empleado || 'N/D',
+    turno: t.turno || 'N/D',
+    totalCajas: 0,
+    totalPiezas: 0,
+    cajas: []
+  };
+  const cajas = t.cajas || {};
+  for (const cid in cajas) {
+    const c = cajas[cid] || {};
+    out.cajas.push({
+      id: cid,
+      codigoCaja: c.codigoCaja || '—',
+      cantidadPiezas: Number(c.cantidadPiezas || c.piezas || 0)
+    });
+  }
+  out.totalCajas = out.cajas.length;
+  out.totalPiezas = out.cajas.reduce((a,c)=>a + (Number.isFinite(c.cantidadPiezas)?c.cantidadPiezas:0), 0);
+  return out;
+}
+
+function cargarLedsDisponibles() {
+    const sel = MT.ui.asignacion.select;
+    const grupoCalidad = usuarioSeleccionado;
+    if (!grupoCalidad || !grupoCalidad.startsWith('CALIDAD_')) return;
+    db.ref(`estadoLEDs/${grupoCalidad}/linea1`).on('value', snap => {
+        sel.innerHTML = '<option value="">Seleccione un LED...</option>';
+        const ledsEstado = snap.val() || {};
+        const totalLeds = CONFIG.LEDS_POR_GRUPO[grupoCalidad] || 5;
+        for (let i = 0; i < totalLeds; i++) {
+            if (!ledsEstado[i]?.tarimaId) {
+                const opt = document.createElement('option');
+                opt.value = i;
+                opt.textContent = `LED ${i+1}`;
+                sel.appendChild(opt);
+            }
+        }
+    });
+}
+
+function renderTarimasPendientes() {
+    const lista = document.getElementById('listaTarimasPendientes');
+    lista.innerHTML = '<li>Cargando...</li>';
+    db.ref('tarimas').once('value').then(snap => {
+        const tarimas = snap.val() || {};
+        db.ref('tarimasAsignadas').once('value').then(snap2 => {
+            const asignadas = snap2.val() || {};
+            const usadas = Object.values(asignadas).map(a => a.tarimaId);
+            lista.innerHTML = '';
+            const pendientes = Object.values(tarimas).filter(t => t.id && !usadas.includes(t.id));
+            if(pendientes.length === 0) {
+                lista.innerHTML = '<li>No hay tarimas pendientes.</li>';
+            } else {
+                pendientes.forEach(t => {
+                    const li = document.createElement('li');
+                    li.textContent = `#${t.id}`;
+                    li.style.cursor = "pointer";
+                    li.onclick = () => {
+                        MT.ui.bxInput.value = t.cajas ? Object.values(t.cajas)[0].codigoCaja : '';
+                        buscarTarimaPorBX(MT.ui.bxInput.value);
+                    };
+                    lista.appendChild(li);
+                });
+            }
+        });
+    });
+}
+
+db.ref('tarimas').on('value', renderTarimasPendientes);
+db.ref('tarimasAsignadas').on('value', renderTarimasPendientes);
+
+async function asignarLedATarima(ledIndex, tarimaId) {
+    const grupo = usuarioSeleccionado;
+    if (!grupo || !tarimaId || ledIndex === null) return mostrarAlerta('Datos incompletos para asignar.');
+    const ledId = `${grupo}-linea1-${ledIndex}`;
+
+    const snap = await db.ref('tarimasAsignadas').orderByChild('tarimaId').equalTo(tarimaId).once('value');
+    if (snap.exists()) {
+        return mostrarAlerta(`Error: La tarima ${tarimaId} ya ha sido asignada a un LED.`);
+    }
+
+    const ledEstadoRef = db.ref(`estadoLEDs/${grupo}/linea1/${ledIndex}`);
+    try {
+        await ledEstadoRef.set({
+            color: 'naranja',
+            tarimaId: tarimaId,
+            usuario: usuarioSeleccionado,
+            timestamp: new Date().toISOString()
+        });
+        await db.ref('tarimasAsignadas').push({ ledId, tarimaId, timestamp: Date.now() });
+        await mostrarAlerta(`✅ Tarima ${tarimaId} asignada al LED ${parseInt(ledIndex) + 1}`);
+        MT.ui.panel.classList.remove('open');
+        MT.ui.infoBox.style.display = 'none';
+        MT.ui.bxInput.value = '';
+    } catch (err) {
+        console.error('Error asignando LED:', err);
+        await mostrarAlerta('No se pudo asignar el LED.');
+    }
+}
+
+
+function renderTarimaEncontrada(tarima) {
+  MT.ui.fields.id.textContent = tarima.id;
+  MT.ui.fields.empleado.textContent = tarima.empleadoId;
+  MT.ui.fields.turno.textContent = tarima.turno;
+  MT.ui.fields.totalCajas.textContent = tarima.totalCajas;
+  MT.ui.fields.totalPiezas.textContent = tarima.totalPiezas;
+
+  MT.ui.fields.listaCajas.innerHTML = '';
+  tarima.cajas.forEach(c => {
+    const li = document.createElement('li');
+    li.textContent = `${c.codigoCaja}  |  ${c.cantidadPiezas} pz`;
+    MT.ui.fields.listaCajas.appendChild(li);
+  });
+
+  const isCalidad = (usuarioSeleccionado || '').startsWith('CALIDAD');
+  MT.ui.asignacion.wrap.style.display = isCalidad ? 'block' : 'none';
+
+  if (isCalidad) {
+    cargarLedsDisponibles();
+    MT.ui.asignacion.btn.onclick = () => {
+      const ledIndex = MT.ui.asignacion.select.value;
+      if (ledIndex === '' || !tarima.id) return;
+      asignarLedATarima(ledIndex, tarima.id);
+    };
+  }
+  MT.ui.infoBox.style.display = 'block';
+}
+
+// ================= FUNCIONES DE RENDER Y VISIBILIDAD =================
+function inyectaLEDs(){
+    document.querySelectorAll('.grupo').forEach(grupoDiv => {
+        grupoDiv.classList.add('oculto');
+    });
+    if (usuarioSeleccionado.startsWith('CALIDAD_')) {
+        document.querySelector(`.grupo[data-grupo="${usuarioSeleccionado}"]`)?.classList.remove('oculto');
+    }
+    document.querySelectorAll('.grupo:not(.oculto) .leds').forEach(contenedor => {
+        const grupoLeds = contenedor.dataset.grupo;
+        const linea = contenedor.dataset.linea;
+        const ledsPorLinea = CONFIG.LEDS_POR_GRUPO[grupoLeds] || 5;
+        contenedor.innerHTML = '';
+        for(let i = 0; i < ledsPorLinea; i++){
+            const led = document.createElement('div');
+            led.className = 'led';
+            led.title = `${grupoLeds} • ${linea} • LED ${i+1}`;
+            led.addEventListener('click', () => togglearLED(grupoLeds, i, linea));
+            contenedor.appendChild(led);
+        }
+    });
+}
+
+function pintarEstado() {
+    db.ref('estadoLEDs').on('value', snapshot => {
+        const estados = snapshot.val() || {};
+        document.querySelectorAll('.leds').forEach(contenedor => {
+            const grupoLeds = contenedor.dataset.grupo;
+            const linea = contenedor.dataset.linea;
+            const ledsEstado = estados[grupoLeds]?.[linea] || {};
+            contenedor.querySelectorAll('.led').forEach((led, index) => {
+                led.className = 'led';
+                led.innerHTML = '';
+                const estado = ledsEstado[index];
+                if (estado && estado.color) {
+                    led.classList.add(estado.color);
+                    if(estado.tarimaId) {
+                        let tarimaIdDisplay = String(estado.tarimaId).slice(-3).padStart(3, '0');
+                        led.innerHTML = `<span class="tarima-id">${tarimaIdDisplay}</span>`;
+                    }
+                }
+            });
+        });
+    });
+}
+
+function esGrupoDeTarimas(grupo) {
+    const grupoBase = grupo.replace('CALIDAD_', '');
+    return grupoBase === 'MULTIPORT';
+}
+
+async function togglearLED(grupo, idx, linea = 'linea1') {
+    const ledRef = db.ref(`estadoLEDs/${grupo}/${linea}/${idx}`);
+    const usuarioActual = usuarioSeleccionado || '';
+    
+    const snapshot = await ledRef.once('value');
+    const estadoActual = snapshot.val() || {};
+    const { fecha, turno } = obtenerTurnoActual();
+
+    if (!usuarioActual.startsWith('CALIDAD_')) return;
+
+    if (esGrupoDeTarimas(grupo)) { // Calidad Multiport
+        if (!estadoActual.tarimaId) return mostrarAlerta('Este LED está vacío. Usa el panel "TARIMAS" para asignar una.');
+        if (estadoActual.color === 'verde') return mostrarAlerta('Esta tarima ya ha sido liberada.');
+        if (estadoActual.color === 'rojo') {
+            if (await mostrarConfirmacion('Esta tarima fue rechazada. ¿Confirmas que ha sido corregida y deseas liberarla ahora?')) {
+                liberarTarima(estadoActual.tarimaId, grupo);
+                ledRef.update({ color: 'verde' });
+            }
+            return;
+        }
+        abrirModalCalidad(grupo, idx, linea, estadoActual.tarimaId);
+    } else { // Calidad Drops y Bedrock
+        if (!estadoActual.color) {
+            if (await mostrarConfirmacion(`¿Iniciar revisión en el LED ${idx + 1}?`)) {
+                ledRef.set({ color: 'naranja', timestamp: new Date().toISOString() });
+                db.ref(`historialLogs/${fecha}/${turno}`).push({ accion: 'revision_iniciada', led: `${grupo}-${linea}-${idx+1}`, grupo, usuario: usuarioActual, timestamp: new Date().toISOString() });
+            }
+        } else if (estadoActual.color === 'naranja') {
+            abrirModalCalidad(grupo, idx, linea, null);
+        } else if (estadoActual.color === 'rojo') {
+            if (await mostrarConfirmacion('Este LED fue rechazado. ¿Confirmas que ha sido corregido y deseas liberarlo ahora?')) {
+                liberarLedSimple(grupo, idx, linea);
+            }
+        } else {
+            await mostrarAlerta(`Este LED ya ha sido liberado.`);
+        }
+    }
+}
+
+// ================= LÓGICA DE PROCESOS Y MODALES DE CALIDAD =================
+async function liberarTarima(tarimaId, grupo) {
+    const { fecha, turno } = obtenerTurnoActual();
+    await db.ref(`tarimas/${tarimaId}`).update({ estado: 'liberada', liberadaPor: usuarioSeleccionado, timestampLiberada: new Date().toISOString() });
+    await db.ref(`historialLogs/${fecha}/${turno}`).push({
+        usuario: usuarioSeleccionado, grupo, accion: 'liberada', tarimaId, timestamp: new Date().toISOString()
+    });
+    actualizarContadoresTarimas(grupo, 'liberadas');
+    await mostrarAlerta(`✅ Tarima ${tarimaId} liberada.`);
+    cerrarModalCalidad();
+}
+
+async function liberarLedSimple(grupo, idx, linea) {
+    const { fecha, turno } = obtenerTurnoActual();
+    const ledIdentifier = `${grupo}-${linea}-${idx + 1}`;
+    await db.ref(`estadoLEDs/${grupo}/${linea}/${idx}`).update({ color: 'verde' });
+    await db.ref(`historialLogs/${fecha}/${turno}`).push({ usuario: usuarioSeleccionado, grupo, accion: 'led_liberado', led: ledIdentifier, timestamp: new Date().toISOString() });
+    actualizarContadoresTarimas(grupo, 'liberadas');
+    await mostrarAlerta(`✅ LED liberado.`);
+    cerrarModalCalidad();
+}
+
+async function guardarRechazo() {
+    if (!ledActivoParaFormulario.grupo) return;
+    const { grupo, tarimaId, idx, linea } = ledActivoParaFormulario;
+    const form = document.getElementById('formularioRechazo');
+    const data = {
+        empleado: form.empleado.value, linea: form.linea.value, parte: form.parte.value,
+        descripcionParte: form.descripcionParte.value, problema: form.problema.value,
+        causa: form.causa.value, accion: form.accion.value, timestamp: new Date().toISOString()
+    };
+    
+    if (esGrupoDeTarimas(grupo) && tarimaId) {
+        await db.ref(`tarimas/${tarimaId}`).update({ estado: 'rechazada', rechazo: data, rechazadoPor: usuarioSeleccionado, timestampRechazo: new Date().toISOString() });
+    }
+    
+    const { fecha, turno } = obtenerTurnoActual();
+    const ledIdentifier = `${grupo}-${linea}-${idx + 1}`;
+    await db.ref(`historialLogs/${fecha}/${turno}`).push({ usuario: usuarioSeleccionado, grupo, accion: 'rechazada', tarimaId, led: ledIdentifier, detalles: data, timestamp: new Date().toISOString() });
+    actualizarContadoresTarimas(grupo, 'rechazadas');
+    await db.ref(`estadoLEDs/${grupo}/${linea}/${idx}`).update({ color: 'rojo' });
+    
+    await mostrarAlerta(`❌ ${esGrupoDeTarimas(grupo) ? `Tarima ${tarimaId}` : 'LED'} rechazado.`);
+    cerrarModalRechazo();
+    form.reset();
+}
+
+let ledSeleccionado = { grupo: null, idx: null, linea: null, tarimaId: null };
+
+function abrirModalCalidad(grupo, idx, linea, tarimaId) {
+    ledActivoParaFormulario = { grupo, idx, linea, tarimaId };
+    const modal = document.getElementById('modalCalidad');
+    document.getElementById('modalCalidadTitulo').textContent = esGrupoDeTarimas(grupo) ? 'Selecciona el estado de la tarima:' : 'Selecciona el estado del LED:';
+
+    modal.classList.add('visible');
+    const setupButton = (selector, callback) => {
+        const oldBtn = modal.querySelector(selector);
+        const newBtn = oldBtn.cloneNode(true);
+        oldBtn.parentNode.replaceChild(newBtn, oldBtn);
+        newBtn.onclick = callback;
+    };
+    setupButton('.opcion-btn[data-color="rojo"]', () => {
+        modal.classList.remove('visible');
+        document.getElementById('modalRechazo').classList.add('visible');
+    });
+    setupButton('.opcion-btn[data-color="verde"]', () => {
+        if (esGrupoDeTarimas(grupo)) {
+            liberarTarima(tarimaId, grupo);
+        } else {
+            liberarLedSimple(grupo, idx, linea);
+        }
+        db.ref(`estadoLEDs/${grupo}/${linea}/${idx}`).update({ color: 'verde' });
+        modal.classList.remove('visible');
+    });
+    modal.querySelector('.cerrar-btn').onclick = () => modal.classList.remove('visible');
+}
+
+function cerrarModalCalidad() { document.getElementById('modalCalidad').classList.remove('visible'); }
+function cerrarModalRechazo() { document.getElementById('modalRechazo').classList.remove('visible'); }
+
+// ================= NAVEGACIÓN Y ARRANQUE =================
+function formatoHora(isoString) { if (!isoString) return 'N/A'; const date = new Date(isoString); return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`; }
+function obtenerTurnoActual() { const ahora = new Date(); let fecha = new Date(ahora); let turno = (ahora.getHours() > 6 || (ahora.getHours() === 6 && ahora.getMinutes() >= 30)) && (ahora.getHours() < 18 || (ahora.getHours() === 18 && ahora.getMinutes() < 30)) ? 'Turno 1' : 'Turno 2'; if (turno === 'Turno 2' && ahora.getHours() < 6) fecha.setDate(ahora.getDate() - 1); const fechaFormateada = `${fecha.getFullYear()}-${String(fecha.getMonth() + 1).padStart(2, '0')}-${String(fecha.getDate()).padStart(2, '0')}`; return { fecha: fechaFormateada, turno }; }
+
+function iniciarListenersFirebase() { 
+    const { fecha, turno: turnoActualString } = obtenerTurnoActual(); 
+    document.getElementById('turnoActual').textContent = `Turno actual: ${turnoActualString}`;
+    const rutaHistorialTurno = `historialLogs/${fecha}/${turnoActualString}`; 
+    if (historialRef) historialRef.off(); 
+    historialRef = db.ref(rutaHistorialTurno); 
+    historialRef.on('value', (snapshot) => { 
+        const logs = snapshot.val() || {}; 
+        const contadores = { CALIDAD_MULTIPORT: { liberadas: 0, rechazadas: 0 }, CALIDAD_BEDROCK: { liberadas: 0, rechazadas: 0 }, CALIDAD_DROPS: { liberadas: 0, rechazadas: 0 } };
+        Object.values(logs).forEach(log => {
+            if (!log.grupo || !contadores[log.grupo]) return;
+            switch (log.accion) {
+                case 'rechazada': case 'led_rechazado': contadores[log.grupo].rechazadas++; break;
+                case 'liberada': case 'led_liberado': contadores[log.grupo].liberadas++; break;
+            }
+        });
+        Object.keys(contadores).forEach(grupo => {
+            const el = document.querySelector(`.grupo[data-grupo="${grupo}"] .tarimas`);
+            if (el) {
+                const c = contadores[grupo];
+                el.textContent = `Liberadas: ${c.liberadas} | Rechazadas: ${c.rechazadas}`;
+            }
+        });
+    });
+}
+function actualizarContadoresTarimas(grupo, accion) { const { fecha, turno } = obtenerTurnoActual(); db.ref(`contadoresTarimas/${fecha}/${turno}/${grupo}/${accion}`).transaction(val => (val || 0) + 1); }
+function activarPantalla(id){ document.querySelectorAll('.pantalla').forEach(p => { p.style.display = 'none'; p.classList.remove('activa'); }); const pantalla = document.getElementById(id); if(pantalla) { pantalla.style.display = 'flex'; pantalla.classList.add('activa'); } }
+function volverAPantalla1(){ usuarioSeleccionado = null; if (historialRef) historialRef.off(); activarPantalla('pantalla1'); }
+async function _seleccionarUsuario(usuario) {
+    const password = await mostrarPromptContraseña(`Introduce la contraseña de Calidad`);
+    if (password === null) return;
+
+    let targetUser = null;
+    if (password === CONFIG.PASSWORDS.CALIDAD_MULTIPORT) targetUser = 'CALIDAD_MULTIPORT';
+    else if (password === CONFIG.PASSWORDS.CALIDAD_DROPS) targetUser = 'CALIDAD_DROPS';
+    else if (password === CONFIG.PASSWORDS.CALIDAD_BEDROCK) targetUser = 'CALIDAD_BEDROCK';
+    
+    if (targetUser) {
+        usuarioSeleccionado = targetUser;
+        document.getElementById('tituloFijo').textContent = targetUser.replace('_', ' ');
+        const fab = document.getElementById('mtOpenBtn');
+        if (fab) { fab.style.display = esGrupoDeTarimas(targetUser) ? 'block' : 'none'; }
+        activarPantalla('pantalla2');
+        inyectaLEDs();
+        pintarEstado();
+        iniciarListenersFirebase();
+    } else { 
+        await mostrarAlerta('Contraseña incorrecta.');
+    }
+}
+
+
+window.addEventListener('load', ()=>{
+    firebase.auth().signInAnonymously().catch(e => console.error('Auth error:', e));
+    
+    setTimeout(() => {
+        const splash = document.getElementById('splashScreen');
+        splash.style.opacity = '0';
+        splash.addEventListener('transitionend', () => {
+            splash.classList.remove('activa');
+            activarPantalla('pantalla1');
+        }, { once: true });
+    }, 2000);
+
+    document.getElementById('modalRechazo').querySelector('form').addEventListener('submit', e => { e.preventDefault(); guardarRechazo(); });
+    if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').then(reg => console.log("✅ SW Registrado")).catch(err => console.error("❌ Error SW:", err));
+});
+</script>
+</body>
+</html>
