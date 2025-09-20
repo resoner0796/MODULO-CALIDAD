@@ -4,9 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Panel Calidad</title>
-<meta name="theme-color" content="#111827">
+<meta name="theme-color" content="#1F2937">
 <link rel="manifest" href="manifest.json">
-<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="apple-touch-icon" href="icon-192x192.png"> <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
 
@@ -45,7 +45,7 @@
   --titulo-size: clamp(36px, 6vw, 72px);
 
   /* Otros */
-  --border-radius-md: 16px; /* Aumentamos el radio para un look más moderno */
+  --border-radius-md: 16px;
   --border-radius-sm: 10px;
   --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
   --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
@@ -59,7 +59,6 @@ html, body {
   font-family: var(--font-family);
   color: var(--text-light);
   background-color: var(--bg-dark);
-  /* Fondo degradado para que el efecto glass se aprecie mejor */
   background-image: 
     radial-gradient(at 47% 33%, hsl(225, 39%, 30%) 0, transparent 59%), 
     radial-gradient(at 82% 65%, hsl(253, 16%, 7%) 0, transparent 55%);
@@ -105,10 +104,9 @@ html, body {
   border-radius: 25px;
   margin: 20px 0;
   padding: 15px;
-  /* Efecto Glassmorphism */
   background: rgba(255, 255, 255, 0.1);
   backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px); /* Para Safari */
+  -webkit-backdrop-filter: blur(8px);
   border: 1px solid rgba(255, 255, 255, 0.15);
   box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
 }
@@ -155,7 +153,7 @@ html, body {
 
 /* === BOTÓN ESTILO GLASS === */
 .usuario-btn {
-  background: rgba(59, 130, 246, 0.25); /* Color base con transparencia */
+  background: rgba(59, 130, 246, 0.25);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   color: var(--text-light);
@@ -169,7 +167,7 @@ html, body {
   box-shadow: var(--shadow-md);
 }
 .usuario-btn:hover {
-  background: rgba(59, 130, 246, 0.4); /* Aumentar opacidad en hover */
+  background: rgba(59, 130, 246, 0.4);
   transform: translateY(-2px);
   box-shadow: 0 0 15px rgba(59, 130, 246, 0.3);
 }
@@ -203,7 +201,6 @@ html, body {
   font-weight: 600;
   padding: 8px 16px;
   border-radius: var(--border-radius-sm);
-  /* Efecto Glass */
   background: rgba(31, 41, 55, 0.5);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
@@ -227,7 +224,7 @@ html, body {
   max-width: 1400px;
   justify-content: center;
 }
-/* === MEJORA: CARD CON FONDO DE PANEL LED === */
+/* === CARD CON FONDO DE PANEL LED === */
 .grupo {
   display: flex;
   flex-direction: column;
@@ -240,13 +237,12 @@ html, body {
   transition: transform 0.2s ease, box-shadow 0.2s ease;
   border-radius: var(--border-radius-md);
   
-  /* Nuevo fondo de panel de LEDs apagados */
-  background-color: #18181a; /* Color base oscuro del panel */
+  background-color: #18181a;
   background-image: radial-gradient(circle at center, rgba(0,0,0,0.4) 2px, transparent 3px);
-  background-size: 12px 12px; /* Controla el tamaño y espaciado de los "puntos" */
+  background-size: 12px 12px;
   
-  border: 1px solid rgba(255, 255, 255, 0.1); /* Mantenemos el borde glass */
-  box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.6); /* Sombra interior para dar relieve */
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.6);
 }
 .grupo:hover {
   transform: translateY(-5px);
@@ -303,7 +299,7 @@ html, body {
 }
 .led .tiempo-transcurrido {
     line-height: 1;
-    color: var(--text-dark); /* Texto oscuro para mejor contraste en LED encendido */
+    color: var(--text-dark);
     text-shadow: none;
 }
 .led.on .tarima-id {
@@ -347,7 +343,7 @@ html, body {
   width: 100%;
   max-height: 150px;
   overflow-y: auto;
-  background-color: rgba(0, 0, 0, 0.2); /* Fondo sutilmente transparente */
+  background-color: rgba(0, 0, 0, 0.2);
   padding: 10px;
   border-radius: var(--border-radius-sm);
   border-top: 1px solid rgba(255,255,255,0.1);
@@ -366,7 +362,7 @@ html, body {
   left: 0;
   width: 100%;
   height: 100%;
-  background-color: rgba(0, 0, 0, 0.5); /* Fondo del overlay */
+  background-color: rgba(0, 0, 0, 0.5);
   backdrop-filter: blur(5px);
   -webkit-backdrop-filter: blur(5px);
   display: flex;
@@ -381,7 +377,6 @@ html, body {
     visibility: visible; 
     opacity: 1; 
 }
-/* === MODAL ESTILO GLASS === */
 .modal-content, .custom-modal {
   padding: 30px;
   text-align: center;
@@ -389,8 +384,7 @@ html, body {
   max-width: 500px;
   box-shadow: var(--shadow-lg);
   border-radius: var(--border-radius-md);
-  /* Efecto Glass */
-  background: rgba(31, 41, 55, 0.7); /* Mayor opacidad para legibilidad */
+  background: rgba(31, 41, 55, 0.7);
   backdrop-filter: blur(15px);
   -webkit-backdrop-filter: blur(15px);
   border: 1px solid rgba(255, 255, 255, 0.15);
@@ -434,7 +428,7 @@ html, body {
 #modalCalidad .opcion-btn[data-color="verde"]:hover { background: rgba(16, 185, 129, 0.5); }
 
 #modalCalidad .cerrar-btn {
-  background: rgba(55, 65, 81, 0.4); /* --bg-light con transparencia */
+  background: rgba(55, 65, 81, 0.4);
   color: var(--text-light);
   border: 1px solid rgba(255, 255, 255, 0.1);
   padding: 10px 20px;
@@ -461,8 +455,7 @@ html, body {
   color: var(--text-light);
   font-size: 16px;
   font-family: var(--font-family);
-  /* Efecto Glass */
-  background: rgba(17, 24, 39, 0.5); /* --bg-dark con transparencia */
+  background: rgba(17, 24, 39, 0.5);
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
 #modalRechazo input:focus, #modalRechazo textarea:focus, #contraseñaInput:focus {
@@ -1128,6 +1121,7 @@ async function liberarTarima(tarimaId, grupo) {
         usuario: usuarioSeleccionado, grupo, accion: 'liberada', tarimaId, timestamp: new Date().toISOString()
     });
     actualizarContadoresTarimas(grupo, 'liberadas');
+    await db.ref(`estadoLEDs/${ledActivoParaFormulario.grupo}/${ledActivoParaFormulario.linea}/${ledActivoParaFormulario.idx}`).update({ color: 'verde' });
     await mostrarAlerta(`✅ Tarima ${tarimaId} liberada.`);
     cerrarModalCalidad();
 }
@@ -1279,8 +1273,13 @@ window.addEventListener('load', ()=>{
     }, 2000);
 
     document.getElementById('modalRechazo').querySelector('form').addEventListener('submit', e => { e.preventDefault(); guardarRechazo(); });
-    if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').then(reg => console.log("✅ SW Registrado")).catch(err => console.error("❌ Error SW:", err));
-
+    
+    // REGISTRO DEL SERVICE WORKER PARA PWA
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('sw.js')
+        .then(reg => console.log("✅ Service Worker Registrado", reg))
+        .catch(err => console.error("❌ Error al registrar Service Worker:", err));
+    }
 });
 </script>
 </body>
