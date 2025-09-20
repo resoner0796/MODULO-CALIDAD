@@ -14,10 +14,6 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
 
 <style>
 :root {
@@ -238,7 +234,8 @@ html, body {
   align-items: center;
   text-align: center;
   padding: 24px;
-  flex-grow: 1;
+  flex-grow: 0;
+  width: auto;
   min-width: 300px;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
   border-radius: var(--border-radius-md);
@@ -600,22 +597,19 @@ html, body {
         <div class="grupo" data-grupo="CALIDAD_MULTIPORT">
             <div class="nombre">CALIDAD MULTIPORT</div>
             <div class="leds" data-grupo="CALIDAD_MULTIPORT" data-linea="linea1"></div>
-            <div class="tarimas">Tarimas: 0</div>
-            <div class="tiempos" data-grupo="CALIDAD_MULTIPORT"></div>
+            <div class="tarimas">Liberadas: 0 | Rechazadas: 0</div>
         </div>
       
         <div class="grupo" data-grupo="CALIDAD_DROPS">
             <div class="nombre">CALIDAD DROPS</div>
             <div class="leds" data-grupo="CALIDAD_DROPS" data-linea="linea1"></div>
-            <div class="tarimas">Tarimas: 0</div>
-            <div class="tiempos" data-grupo="CALIDAD_DROPS"></div>
+            <div class="tarimas">Liberadas: 0 | Rechazadas: 0</div>
         </div>
     
         <div class="grupo" data-grupo="CALIDAD_BEDROCK">
             <div class="nombre">CALIDAD BEDROCK</div>
             <div class="leds" data-grupo="CALIDAD_BEDROCK" data-linea="linea1"></div>
-            <div class="tarimas">Tarimas: 0</div>
-            <div class="tiempos" data-grupo="CALIDAD_BEDROCK"></div>
+            <div class="tarimas">Liberadas: 0 | Rechazadas: 0</div>
         </div>
     </div>
 </div>
@@ -738,20 +732,18 @@ html, body {
 <script>
 // ================= CONFIG Y ESTADO =================
 const CONFIG = {
-    USUARIOS: ['MULTIPORT', 'BEDROCK', 'DROPS', 'LOGÍSTICA', 'SUPERVISOR', 'CALIDAD'],
-    PRODUCCION_GRUPOS: ['MULTIPORT', 'BEDROCK', 'DROPS'],
     PASSWORDS: {
-        'LOGÍSTICA': 'LOGRAM', 'MULTIPORT': 'MP25', 'BEDROCK': 'BR25', 'DROPS': 'DROP25', 'SUPERVISOR': 'SUP25',
-        'CALIDAD_MULTIPORT': 'AQLMP', 'CALIDAD_DROPS': 'AQLDP', 'CALIDAD_BEDROCK': 'AQLBR', 'REPORTES': 'REPO25', 'DASHBOARD': 'DASH25'
+        'CALIDAD_MULTIPORT': 'AQLMP', 'CALIDAD_DROPS': 'AQLDP', 'CALIDAD_BEDROCK': 'AQLBR'
     },
     LEDS_POR_GRUPO: {
-        'MULTIPORT': 5, 'BEDROCK': 5, 'DROPS': 5, 'CALIDAD_MULTIPORT': 5, 'CALIDAD_BEDROCK': 5, 'CALIDAD_DROPS': 5
+        'CALIDAD_MULTIPORT': 5, 'CALIDAD_BEDROCK': 5, 'CALIDAD_DROPS': 5
     }
 };
 
 let usuarioSeleccionado = null;
 let ledActivoParaFormulario = { grupo: null, idx: null, linea: null };
 let historialRef;
+let appPasswords = { ...CONFIG.PASSWORDS };
 
 
 // ================= FIREBASE =================
@@ -765,61 +757,51 @@ const firebaseConfig = {
     appId: "1:38365879945:web:e2f3590fe77f013dba3058"
 };
 firebase.initializeApp(firebaseConfig);
-const database = firebase.database();
-const db = database; 
-
-// A partir de aquí se incluyen solo las funciones JS necesarias para CALIDAD
-
-(function compatSeleccionarUsuario(){
-  window.seleccionarUsuario = function(usuarioClave) {
-    _seleccionarUsuario(usuarioClave);
-  };
-})();
+const db = firebase.database();
 
 // ================= MODALES PERSONALIZADOS =================
-const modalAlerta = document.getElementById('modalAlerta');
-const modalConfirmacion = document.getElementById('modalConfirmacion');
-const modalContraseña = document.getElementById('modalContraseña');
-
 function mostrarAlerta(mensaje, titulo = "Notificación") {
+    const modal = document.getElementById('modalAlerta');
     document.getElementById('alertaTitulo').textContent = titulo;
     document.getElementById('alertaMensaje').textContent = mensaje;
-    modalAlerta.classList.add('visible');
+    modal.classList.add('visible');
     return new Promise(resolve => {
         document.getElementById('alertaBotonCerrar').onclick = () => {
-            modalAlerta.classList.remove('visible');
+            modal.classList.remove('visible');
             resolve();
         };
     });
 }
 
 function mostrarConfirmacion(mensaje, titulo = "Confirmación") {
+    const modal = document.getElementById('modalConfirmacion');
     document.getElementById('confirmacionTitulo').textContent = titulo;
     document.getElementById('confirmacionMensaje').textContent = mensaje;
-    modalConfirmacion.classList.add('visible');
+    modal.classList.add('visible');
     return new Promise(resolve => {
         document.getElementById('confirmacionBotonOk').onclick = () => {
-            modalConfirmacion.classList.remove('visible');
+            modal.classList.remove('visible');
             resolve(true);
         };
         document.getElementById('confirmacionBotonCancelar').onclick = () => {
-            modalConfirmacion.classList.remove('visible');
+            modal.classList.remove('visible');
             resolve(false);
         };
     });
 }
 
 function mostrarPromptContraseña(mensaje, titulo = "Acceso Requerido") {
+    const modal = document.getElementById('modalContraseña');
     document.getElementById('contraseñaTitulo').textContent = titulo;
     document.getElementById('contraseñaMensaje').textContent = mensaje;
     const input = document.getElementById('contraseñaInput');
     input.value = '';
-    modalContraseña.classList.add('visible');
+    modal.classList.add('visible');
     input.focus();
 
     return new Promise(resolve => {
         const resolver = (value) => {
-            modalContraseña.classList.remove('visible');
+            modal.classList.remove('visible');
             document.getElementById('contraseñaBotonOk').onclick = null;
             document.getElementById('contraseñaBotonCancelar').onclick = null;
             input.onkeypress = null;
@@ -834,7 +816,7 @@ function mostrarPromptContraseña(mensaje, titulo = "Acceso Requerido") {
     });
 }
 
-// ================= Panel de Identificación de Tarimas (para Calidad Multiport) =================
+// ================= Panel de Identificación de Tarimas =================
 const MT = {
   ui: {
     panel:    document.getElementById('mtPanel'),
@@ -869,8 +851,8 @@ function buscarTarimaPorBX(bxCode) {
     snapshot.forEach(tSnap => {
       const t = tSnap.val() || {};
       const cajas = t.cajas || {};
-      for (const k in cajas) {
-        if (cajas[k] && cajas[k].codigoCaja === bxCode) {
+      for (const key in cajas) {
+        if (cajas[key] && cajas[key].codigoCaja === bxCode) {
           encontrada = { id: t.id || tSnap.key, ...t };
           break;
         }
@@ -880,12 +862,14 @@ function buscarTarimaPorBX(bxCode) {
 
     if (!encontrada) {
       MT.ui.infoBox.style.display = 'none';
-      mostrarAlerta('No se encontró tarima con ese BX.');
+      mostrarAlerta('No se encontró ninguna tarima con ese código BX.');
       return;
     }
+    
     MT.state.tarimaActual = normalizarTarima(encontrada);
     renderTarimaEncontrada(MT.state.tarimaActual);
     MT.ui.pendientesPanel.style.display = 'none';
+
   }).catch(err => {
     console.error('Error buscando tarima:', err);
     mostrarAlerta('Error al buscar la tarima. Reintenta.');
@@ -894,24 +878,27 @@ function buscarTarimaPorBX(bxCode) {
 
 function normalizarTarima(t) {
   const out = {
-    id: t.id,
-    empleadoId: t.empleadoId || t.empleado || t.id_empleado || 'N/D',
+    id: t.id || 'N/D',
+    empleadoId: t.empleadoId || 'N/D',
     turno: t.turno || 'N/D',
-    totalCajas: 0,
-    totalPiezas: 0,
     cajas: []
   };
-  const cajas = t.cajas || {};
-  for (const cid in cajas) {
-    const c = cajas[cid] || {};
-    out.cajas.push({
-      id: cid,
-      codigoCaja: c.codigoCaja || '—',
-      cantidadPiezas: Number(c.cantidadPiezas || c.piezas || 0)
-    });
+  
+  const cajasObj = t.cajas || {};
+  for (const key in cajasObj) {
+    const caja = cajasObj[key];
+    if (caja && caja.codigoCaja) {
+      out.cajas.push({
+        id: key,
+        codigoCaja: caja.codigoCaja,
+        cantidadPiezas: Number(caja.cantidadPiezas || 0)
+      });
+    }
   }
+  
   out.totalCajas = out.cajas.length;
-  out.totalPiezas = out.cajas.reduce((a,c)=>a + (Number.isFinite(c.cantidadPiezas)?c.cantidadPiezas:0), 0);
+  out.totalPiezas = out.cajas.reduce((sum, caja) => sum + caja.cantidadPiezas, 0);
+  
   return out;
 }
 
@@ -937,42 +924,55 @@ function cargarLedsDisponibles() {
 function renderTarimasPendientes() {
     const lista = document.getElementById('listaTarimasPendientes');
     lista.innerHTML = '<li>Cargando...</li>';
-    db.ref('tarimas').once('value').then(snap => {
-        const tarimas = snap.val() || {};
-        db.ref('tarimasAsignadas').once('value').then(snap2 => {
-            const asignadas = snap2.val() || {};
-            const usadas = Object.values(asignadas).map(a => a.tarimaId);
-            lista.innerHTML = '';
-            const pendientes = Object.values(tarimas).filter(t => t.id && !usadas.includes(t.id));
-            if(pendientes.length === 0) {
-                lista.innerHTML = '<li>No hay tarimas pendientes.</li>';
-            } else {
-                pendientes.forEach(t => {
-                    const li = document.createElement('li');
-                    li.textContent = `#${t.id}`;
-                    li.style.cursor = "pointer";
-                    li.onclick = () => {
-                        MT.ui.bxInput.value = t.cajas ? Object.values(t.cajas)[0].codigoCaja : '';
-                        buscarTarimaPorBX(MT.ui.bxInput.value);
-                    };
-                    lista.appendChild(li);
-                });
-            }
+    db.ref('tarimas').orderByChild('estado').equalTo('pendiente').once('value').then(snap => {
+        if (!snap.exists()) {
+            lista.innerHTML = '<li>No hay tarimas pendientes.</li>';
+            return;
+        }
+
+        const tarimasPendientes = [];
+        snap.forEach(tSnap => {
+            tarimasPendientes.push(tSnap.val());
         });
+        
+        lista.innerHTML = '';
+        if (tarimasPendientes.length === 0) {
+            lista.innerHTML = '<li>No hay tarimas pendientes.</li>';
+        } else {
+            tarimasPendientes.forEach(t => {
+                const li = document.createElement('li');
+                li.textContent = `Tarima #${t.id}`;
+                li.style.cursor = "pointer";
+                li.onclick = () => {
+                    const primerBx = t.cajas ? Object.values(t.cajas)[0]?.codigoCaja : null;
+                    if (primerBx) {
+                        MT.ui.bxInput.value = primerBx;
+                        buscarTarimaPorBX(primerBx);
+                    } else {
+                        mostrarAlerta('Esta tarima no tiene cajas registradas.');
+                    }
+                };
+                lista.appendChild(li);
+            });
+        }
     });
 }
 
-db.ref('tarimas').on('value', renderTarimasPendientes);
-db.ref('tarimasAsignadas').on('value', renderTarimasPendientes);
+
+db.ref('tarimas').on('child_changed', renderTarimasPendientes);
+db.ref('tarimas').on('child_added', renderTarimasPendientes);
+db.ref('tarimas').on('child_removed', renderTarimasPendientes);
 
 async function asignarLedATarima(ledIndex, tarimaId) {
     const grupo = usuarioSeleccionado;
     if (!grupo || !tarimaId || ledIndex === null) return mostrarAlerta('Datos incompletos para asignar.');
     const ledId = `${grupo}-linea1-${ledIndex}`;
 
-    const snap = await db.ref('tarimasAsignadas').orderByChild('tarimaId').equalTo(tarimaId).once('value');
-    if (snap.exists()) {
-        return mostrarAlerta(`Error: La tarima ${tarimaId} ya ha sido asignada a un LED.`);
+    const tarimaSnap = await db.ref(`tarimas/${tarimaId}`).once('value');
+    const tarimaData = tarimaSnap.val();
+
+    if (tarimaData && tarimaData.estado !== 'pendiente') {
+         return mostrarAlerta(`Error: La tarima ${tarimaId} ya ha sido procesada por calidad.`);
     }
 
     const ledEstadoRef = db.ref(`estadoLEDs/${grupo}/linea1/${ledIndex}`);
@@ -983,8 +983,10 @@ async function asignarLedATarima(ledIndex, tarimaId) {
             usuario: usuarioSeleccionado,
             timestamp: new Date().toISOString()
         });
-        await db.ref('tarimasAsignadas').push({ ledId, tarimaId, timestamp: Date.now() });
-        await mostrarAlerta(`✅ Tarima ${tarimaId} asignada al LED ${parseInt(ledIndex) + 1}`);
+        
+        await db.ref(`tarimas/${tarimaId}`).update({ estado: 'en_inspeccion', asignadaA: usuarioSeleccionado });
+        
+        await mostrarAlerta(`✅ Tarima ${tarimaId} asignada al LED ${parseInt(ledIndex) + 1} para inspección.`);
         MT.ui.panel.classList.remove('open');
         MT.ui.infoBox.style.display = 'none';
         MT.ui.bxInput.value = '';
@@ -1026,12 +1028,10 @@ function renderTarimaEncontrada(tarima) {
 // ================= FUNCIONES DE RENDER Y VISIBILIDAD =================
 function inyectaLEDs(){
     document.querySelectorAll('.grupo').forEach(grupoDiv => {
-        grupoDiv.classList.add('oculto');
+        grupoDiv.classList.remove('oculto'); // Muestra todos por defecto en esta app
     });
-    if (usuarioSeleccionado.startsWith('CALIDAD_')) {
-        document.querySelector(`.grupo[data-grupo="${usuarioSeleccionado}"]`)?.classList.remove('oculto');
-    }
-    document.querySelectorAll('.grupo:not(.oculto) .leds').forEach(contenedor => {
+    
+    document.querySelectorAll('.leds').forEach(contenedor => {
         const grupoLeds = contenedor.dataset.grupo;
         const linea = contenedor.dataset.linea;
         const ledsPorLinea = CONFIG.LEDS_POR_GRUPO[grupoLeds] || 5;
@@ -1060,7 +1060,7 @@ function pintarEstado() {
                 if (estado && estado.color) {
                     led.classList.add(estado.color);
                     if(estado.tarimaId) {
-                        let tarimaIdDisplay = String(estado.tarimaId).slice(-3).padStart(3, '0');
+                        let tarimaIdDisplay = String(estado.tarimaId).replace('TAR-', '');
                         led.innerHTML = `<span class="tarima-id">${tarimaIdDisplay}</span>`;
                     }
                 }
@@ -1184,8 +1184,6 @@ function abrirModalCalidad(grupo, idx, linea, tarimaId) {
         } else {
             liberarLedSimple(grupo, idx, linea);
         }
-        db.ref(`estadoLEDs/${grupo}/${linea}/${idx}`).update({ color: 'verde' });
-        modal.classList.remove('visible');
     });
     modal.querySelector('.cerrar-btn').onclick = () => modal.classList.remove('visible');
 }
@@ -1197,7 +1195,7 @@ function cerrarModalRechazo() { document.getElementById('modalRechazo').classLis
 function formatoHora(isoString) { if (!isoString) return 'N/A'; const date = new Date(isoString); return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`; }
 function obtenerTurnoActual() { const ahora = new Date(); let fecha = new Date(ahora); let turno = (ahora.getHours() > 6 || (ahora.getHours() === 6 && ahora.getMinutes() >= 30)) && (ahora.getHours() < 18 || (ahora.getHours() === 18 && ahora.getMinutes() < 30)) ? 'Turno 1' : 'Turno 2'; if (turno === 'Turno 2' && ahora.getHours() < 6) fecha.setDate(ahora.getDate() - 1); const fechaFormateada = `${fecha.getFullYear()}-${String(fecha.getMonth() + 1).padStart(2, '0')}-${String(fecha.getDate()).padStart(2, '0')}`; return { fecha: fechaFormateada, turno }; }
 
-function iniciarListenersFirebase() { 
+function iniciarListenersFirebase() {
     const { fecha, turno: turnoActualString } = obtenerTurnoActual(); 
     document.getElementById('turnoActual').textContent = `Turno actual: ${turnoActualString}`;
     const rutaHistorialTurno = `historialLogs/${fecha}/${turnoActualString}`; 
@@ -1225,14 +1223,15 @@ function iniciarListenersFirebase() {
 function actualizarContadoresTarimas(grupo, accion) { const { fecha, turno } = obtenerTurnoActual(); db.ref(`contadoresTarimas/${fecha}/${turno}/${grupo}/${accion}`).transaction(val => (val || 0) + 1); }
 function activarPantalla(id){ document.querySelectorAll('.pantalla').forEach(p => { p.style.display = 'none'; p.classList.remove('activa'); }); const pantalla = document.getElementById(id); if(pantalla) { pantalla.style.display = 'flex'; pantalla.classList.add('activa'); } }
 function volverAPantalla1(){ usuarioSeleccionado = null; if (historialRef) historialRef.off(); activarPantalla('pantalla1'); }
-async function _seleccionarUsuario(usuario) {
+
+async function seleccionarUsuario(usuario) {
     const password = await mostrarPromptContraseña(`Introduce la contraseña de Calidad`);
     if (password === null) return;
 
     let targetUser = null;
-    if (password === CONFIG.PASSWORDS.CALIDAD_MULTIPORT) targetUser = 'CALIDAD_MULTIPORT';
-    else if (password === CONFIG.PASSWORDS.CALIDAD_DROPS) targetUser = 'CALIDAD_DROPS';
-    else if (password === CONFIG.PASSWORDS.CALIDAD_BEDROCK) targetUser = 'CALIDAD_BEDROCK';
+    if (password === appPasswords.CALIDAD_MULTIPORT) targetUser = 'CALIDAD_MULTIPORT';
+    else if (password === appPasswords.CALIDAD_DROPS) targetUser = 'CALIDAD_DROPS';
+    else if (password === appPasswords.CALIDAD_BEDROCK) targetUser = 'CALIDAD_BEDROCK';
     
     if (targetUser) {
         usuarioSeleccionado = targetUser;
@@ -1248,9 +1247,21 @@ async function _seleccionarUsuario(usuario) {
     }
 }
 
+function cargarConfiguracionGlobal() { 
+    db.ref('configuracion/passwords').once('value').then(snap => { 
+        if(snap.exists()) {
+             // Fusiona las contraseñas de la BD con las default, dando prioridad a las de la BD
+            Object.assign(appPasswords, snap.val());
+        } 
+    }); 
+}
 
 window.addEventListener('load', ()=>{
-    firebase.auth().signInAnonymously().catch(e => console.error('Auth error:', e));
+    firebase.auth().signInAnonymously()
+    .then(() => {
+        cargarConfiguracionGlobal(); // Carga las contraseñas desde Firebase al iniciar
+    })
+    .catch(e => console.error('Auth error:', e));
     
     setTimeout(() => {
         const splash = document.getElementById('splashScreen');
@@ -1263,6 +1274,7 @@ window.addEventListener('load', ()=>{
 
     document.getElementById('modalRechazo').querySelector('form').addEventListener('submit', e => { e.preventDefault(); guardarRechazo(); });
     if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').then(reg => console.log("✅ SW Registrado")).catch(err => console.error("❌ Error SW:", err));
+
 });
 </script>
 </body>
