@@ -582,7 +582,7 @@ html, body {
         <h1 id="mainTitle">Panel de Calidad</h1>
     </div>
     <div class="btn-contenedor">
-        <button class="usuario-btn" onclick="seleccionarUsuario('CALIDAD')">INGRESAR A CALIDAD</button>
+        <button class="usuario-btn" onclick="seleccionarUsuario()">INGRESAR A CALIDAD</button>
     </div>
 </section>
 
@@ -816,7 +816,7 @@ function mostrarPromptContraseña(mensaje, titulo = "Acceso Requerido") {
     });
 }
 
-// ================= Panel de Identificación de Tarimas =================
+// ================= Panel de Identificación de Tarimas (para Calidad Multiport) =================
 const MT = {
   ui: {
     panel:    document.getElementById('mtPanel'),
@@ -966,8 +966,7 @@ db.ref('tarimas').on('child_removed', renderTarimasPendientes);
 async function asignarLedATarima(ledIndex, tarimaId) {
     const grupo = usuarioSeleccionado;
     if (!grupo || !tarimaId || ledIndex === null) return mostrarAlerta('Datos incompletos para asignar.');
-    const ledId = `${grupo}-linea1-${ledIndex}`;
-
+    
     const tarimaSnap = await db.ref(`tarimas/${tarimaId}`).once('value');
     const tarimaData = tarimaSnap.val();
 
@@ -1027,11 +1026,20 @@ function renderTarimaEncontrada(tarima) {
 
 // ================= FUNCIONES DE RENDER Y VISIBILIDAD =================
 function inyectaLEDs(){
+    // Primero, ocultar todos los grupos
     document.querySelectorAll('.grupo').forEach(grupoDiv => {
-        grupoDiv.classList.remove('oculto'); // Muestra todos por defecto en esta app
+        grupoDiv.classList.add('oculto');
     });
+
+    // Luego, mostrar solo el grupo del usuario seleccionado
+    if (usuarioSeleccionado) {
+        const grupoAMostrar = document.querySelector(`.grupo[data-grupo="${usuarioSeleccionado}"]`);
+        if (grupoAMostrar) {
+            grupoAMostrar.classList.remove('oculto');
+        }
+    }
     
-    document.querySelectorAll('.leds').forEach(contenedor => {
+    document.querySelectorAll('.grupo:not(.oculto) .leds').forEach(contenedor => {
         const grupoLeds = contenedor.dataset.grupo;
         const linea = contenedor.dataset.linea;
         const ledsPorLinea = CONFIG.LEDS_POR_GRUPO[grupoLeds] || 5;
@@ -1090,7 +1098,6 @@ async function togglearLED(grupo, idx, linea = 'linea1') {
         if (estadoActual.color === 'rojo') {
             if (await mostrarConfirmacion('Esta tarima fue rechazada. ¿Confirmas que ha sido corregida y deseas liberarla ahora?')) {
                 liberarTarima(estadoActual.tarimaId, grupo);
-                ledRef.update({ color: 'verde' });
             }
             return;
         }
@@ -1195,7 +1202,7 @@ function cerrarModalRechazo() { document.getElementById('modalRechazo').classLis
 function formatoHora(isoString) { if (!isoString) return 'N/A'; const date = new Date(isoString); return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`; }
 function obtenerTurnoActual() { const ahora = new Date(); let fecha = new Date(ahora); let turno = (ahora.getHours() > 6 || (ahora.getHours() === 6 && ahora.getMinutes() >= 30)) && (ahora.getHours() < 18 || (ahora.getHours() === 18 && ahora.getMinutes() < 30)) ? 'Turno 1' : 'Turno 2'; if (turno === 'Turno 2' && ahora.getHours() < 6) fecha.setDate(ahora.getDate() - 1); const fechaFormateada = `${fecha.getFullYear()}-${String(fecha.getMonth() + 1).padStart(2, '0')}-${String(fecha.getDate()).padStart(2, '0')}`; return { fecha: fechaFormateada, turno }; }
 
-function iniciarListenersFirebase() {
+function iniciarListenersFirebase() { 
     const { fecha, turno: turnoActualString } = obtenerTurnoActual(); 
     document.getElementById('turnoActual').textContent = `Turno actual: ${turnoActualString}`;
     const rutaHistorialTurno = `historialLogs/${fecha}/${turnoActualString}`; 
@@ -1224,7 +1231,7 @@ function actualizarContadoresTarimas(grupo, accion) { const { fecha, turno } = o
 function activarPantalla(id){ document.querySelectorAll('.pantalla').forEach(p => { p.style.display = 'none'; p.classList.remove('activa'); }); const pantalla = document.getElementById(id); if(pantalla) { pantalla.style.display = 'flex'; pantalla.classList.add('activa'); } }
 function volverAPantalla1(){ usuarioSeleccionado = null; if (historialRef) historialRef.off(); activarPantalla('pantalla1'); }
 
-async function seleccionarUsuario(usuario) {
+async function seleccionarUsuario() {
     const password = await mostrarPromptContraseña(`Introduce la contraseña de Calidad`);
     if (password === null) return;
 
@@ -1250,7 +1257,6 @@ async function seleccionarUsuario(usuario) {
 function cargarConfiguracionGlobal() { 
     db.ref('configuracion/passwords').once('value').then(snap => { 
         if(snap.exists()) {
-             // Fusiona las contraseñas de la BD con las default, dando prioridad a las de la BD
             Object.assign(appPasswords, snap.val());
         } 
     }); 
