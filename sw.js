@@ -1,36 +1,43 @@
-const CACHE_NAME = 'panel-logistica-v3'; // Versión actualizada de la caché
-const FILES_TO_CACHE = [
-  './',
-  './index.html',
-  './manifest.json',
-  './iconolog-192.png',
-  './iconolog-512.png'
+// Definimos un nombre y versión para nuestro cache
+const CACHE_NAME = 'panel-calidad-v1';
+
+// Listamos los archivos que queremos cachear (el esqueleto de la app)
+const urlsToCache = [
+  'index.html',
+  'manifest.json',
+  'https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js',
+  'https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js',
+  'https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js'
+   'icon-512x512.png',
+   'icon-192x192.png'
 ];
 
-self.addEventListener('install', e => {
-  e.waitUntil(
-    caches.open(CACHE_NAME).then(cache => {
-      console.log('Precaching files...');
-      return cache.addAll(FILES_TO_CACHE);
-    })
+// Evento 'install': se dispara cuando el Service Worker se instala
+self.addEventListener('install', event => {
+  // Esperamos a que la instalación termine para proceder
+  event.waitUntil(
+    caches.open(CACHE_NAME)
+      .then(cache => {
+        console.log('Cache abierto');
+        // Agregamos todos nuestros archivos al cache
+        return cache.addAll(urlsToCache);
+      })
   );
 });
 
-self.addEventListener('activate', e => {
-  e.waitUntil(
-    caches.keys().then(keyList => {
-      return Promise.all(keyList.map(key => {
-        if (key !== CACHE_NAME) {
-          console.log('Removing old cache:', key);
-          return caches.delete(key);
+// Evento 'fetch': se dispara cada vez que la página solicita un recurso (CSS, JS, imagen, etc.)
+self.addEventListener('fetch', event => {
+  event.respondWith(
+    // Buscamos si el recurso ya está en el cache
+    caches.match(event.request)
+      .then(response => {
+        // Si encontramos una respuesta en el cache, la devolvemos
+        if (response) {
+          return response;
         }
-      }));
-    })
-  );
-});
-
-self.addEventListener('fetch', e => {
-  e.respondWith(
-    caches.match(e.request).then(resp => resp || fetch(e.request))
+        // Si no está en cache, lo pedimos a la red
+        return fetch(event.request);
+      }
+    )
   );
 });
