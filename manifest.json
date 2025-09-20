@@ -1,21 +1,25 @@
 {
-  "name": "Panel Logística",
-  "short_name": "Panel Logistica",
-  "description": "Control de LEDs para logística",
-  "start_url": "./index.html",
+  "name": "Panel de Calidad",
+  "short_name": "Calidad",
+  "description": "Panel de gestión de calidad para tarimas de logística.",
+  "start_url": "index.html",
   "display": "standalone",
-  "background_color": "#111111",
-  "theme_color": "#000000",
+  "background_color": "#111827",
+  "theme_color": "#1F2937",
+  "orientation": "portrait-primary",
   "icons": [
+    
     {
-      "src": "iconolog-192.png",
+      "src": "icon-192x192.png",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     },
     {
-      "src": "iconolog-512.png",
+      "src": "icon-512x512.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     }
   ]
 }
